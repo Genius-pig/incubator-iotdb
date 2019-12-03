@@ -30,6 +30,7 @@ import org.apache.iotdb.db.engine.cache.CacheHitRatioMonitor;
 import org.apache.iotdb.db.engine.merge.manage.MergeManager;
 import org.apache.iotdb.db.engine.flush.FlushManager;
 import org.apache.iotdb.db.exception.StartupException;
+import org.apache.iotdb.db.http.HttpManager;
 import org.apache.iotdb.db.metadata.MManager;
 import org.apache.iotdb.db.monitor.StatMonitor;
 import org.apache.iotdb.db.rescon.TVListAllocator;
@@ -98,6 +99,7 @@ public class IoTDB implements IoTDBMBean {
     registerManager.register(MergeManager.getINSTANCE());
     registerManager.register(CacheHitRatioMonitor.getInstance());
     registerManager.register(MetricsService.getInstance());
+    registerManager.register(HttpManager.getInstance());
     JMXService.registerMBean(getInstance(), mbeanName);
 
     // When registering statMonitor, we should start recovering some statistics
