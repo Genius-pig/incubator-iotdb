@@ -20,16 +20,13 @@
 package org.apache.iotdb.db.http.service;
 
 import java.io.IOException;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.iotdb.db.auth.AuthException;
 import org.apache.iotdb.db.auth.AuthorityChecker;
 import org.apache.iotdb.db.auth.authorizer.IAuthorizer;
 import org.apache.iotdb.db.auth.authorizer.LocalFileAuthorizer;
-import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBConstant;
-import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.exception.path.PathException;
@@ -38,9 +35,9 @@ import org.apache.iotdb.db.exception.storageGroup.StorageGroupException;
 import org.apache.iotdb.db.http.model.TimeValues;
 import org.apache.iotdb.db.metadata.MManager;
 import org.apache.iotdb.db.qp.QueryProcessor;
+import org.apache.iotdb.db.qp.executor.QueryProcessExecutor;
 import org.apache.iotdb.db.qp.physical.PhysicalPlan;
 import org.apache.iotdb.db.qp.physical.crud.QueryPlan;
-import org.apache.iotdb.db.qp.physical.sys.AuthorPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.control.QueryResourceManager;
 import org.apache.iotdb.tsfile.exception.filter.QueryFilterOptimizationException;
@@ -51,13 +48,10 @@ import org.slf4j.LoggerFactory;
 
 public class HttpBackEnd {
 
-  protected ThreadLocal<String> username = new ThreadLocal<>();
+  protected String username;
   private static final String INFO_NOT_LOGIN = "{}: Not login.";
   private static final Logger logger = LoggerFactory.getLogger(HttpBackEnd.class);
-  protected QueryProcessor processor;
-  private IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
-  private ThreadLocal<ZoneId> zoneIds = new ThreadLocal<>();
-
+  protected QueryProcessor processor = new QueryProcessor(new QueryProcessExecutor());
 
 
   void login(String username, String password) throws AuthException {
@@ -79,8 +73,7 @@ public class HttpBackEnd {
     }
 
     if (status) {
-      this.username.set(username);
-      zoneIds.set(config.getZoneID());
+      this.username = username;
     } else {
       throw new AuthException("Wrong login password");
     }
@@ -124,8 +117,8 @@ public class HttpBackEnd {
     while(queryDataSet.hasNext()) {
       TimeValues timeValues = new TimeValues();
       args = queryDataSet.next().toString().split("\t");
-      timeValues.setTime(Long.parseLong(args[0]));
-      timeValues.setValue(args[1]);
+      timeValues.setTime(Long.parseLong(args[1]));
+      timeValues.setValue(args[0]);
       list.add(timeValues);
     }
 
@@ -137,11 +130,7 @@ public class HttpBackEnd {
   }
 
   private boolean checkAuthorization(List<Path> paths, PhysicalPlan plan) throws AuthException {
-    String targetUser = null;
-    if (plan instanceof AuthorPlan) {
-      targetUser = ((AuthorPlan) plan).getUserName();
-    }
-    return AuthorityChecker.check(username.get(), paths, plan.getOperatorType(), targetUser);
+    return AuthorityChecker.check(username, paths, plan.getOperatorType(), null);
   }
 
   public List<String> getMetaData() throws PathException {
@@ -159,7 +148,7 @@ public class HttpBackEnd {
   }
 
   private boolean checkLogin() {
-    return username.get() != null;
+    return username != null;
   }
 
 }

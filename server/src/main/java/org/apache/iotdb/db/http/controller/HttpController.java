@@ -24,9 +24,6 @@ import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -109,7 +106,8 @@ public class HttpController {
     try {
       JSONObject jsonObject = getRequestBodyJson(request);
       assert jsonObject != null;
-      Pair<ZonedDateTime, ZonedDateTime> timeRange = getTimeFromAndTo(jsonObject);
+      JSONObject range = (JSONObject) jsonObject.get("range");
+      Pair<String, String> timeRange = new Pair<>((String) range.get("from"), (String) range.get("to"));
       JSONArray array = (JSONArray) jsonObject.get("targets"); // []
       JSONArray result = new JSONArray();
       for (int i = 0; i < array.size(); i++) {
@@ -136,17 +134,8 @@ public class HttpController {
     return null;
   }
 
-    private Pair<ZonedDateTime, ZonedDateTime> getTimeFromAndTo(JSONObject jsonObject)
-      throws JSONException {
-    JSONObject obj = (JSONObject) jsonObject.get("range");
-    Instant from = Instant.parse((String) obj.get("from"));
-    Instant to = Instant.parse((String) obj.get("to"));
-    return new Pair<>(from.atZone(ZoneId.of("Asia/Shanghai")),
-        to.atZone(ZoneId.of("Asia/Shanghai")));
-  }
-
   private void setJsonTable(JSONObject obj, String target,
-      Pair<ZonedDateTime, ZonedDateTime> timeRange)
+      Pair<String, String> timeRange)
       throws JSONException {
     List<TimeValues> timeValues = httpService.querySeries(target, timeRange);
     JSONArray columns = new JSONArray();
@@ -170,7 +159,7 @@ public class HttpController {
   }
 
   private void setJsonTimeseries(JSONObject obj, String target,
-      Pair<ZonedDateTime, ZonedDateTime> timeRange)
+      Pair<String, String> timeRange)
       throws JSONException {
     List<TimeValues> timeValues = httpService.querySeries(target, timeRange);
     logger.info("query size: {}", timeValues.size());

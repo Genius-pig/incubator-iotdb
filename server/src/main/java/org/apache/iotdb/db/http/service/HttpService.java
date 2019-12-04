@@ -19,7 +19,6 @@
 
 package org.apache.iotdb.db.http.service;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import org.apache.iotdb.db.auth.AuthException;
 import org.apache.iotdb.db.exception.path.PathException;
@@ -34,9 +33,9 @@ public class HttpService {
   private static final Logger logger = LoggerFactory.getLogger(HttpService.class);
   private HttpBackEnd httpBackEnd = new HttpBackEnd();
 
-  public List<TimeValues> querySeries(String s, Pair<ZonedDateTime, ZonedDateTime> timeRange) {
-    Long from = zonedCovertToLong(timeRange.left);
-    Long to = zonedCovertToLong(timeRange.right);
+  public List<TimeValues> querySeries(String s, Pair<String, String> timeRange) {
+    String from = timeRange.left;
+    String to = timeRange.right;
     String sql = "SELECT " + s.substring(s.lastIndexOf('.') + 1) + " FROM root."
         + s.substring(0, s.lastIndexOf('.')) + " WHERE time > " + from + " and time < " + to;
     logger.info(sql);
@@ -55,10 +54,6 @@ public class HttpService {
 
   public void login(String username, String password) throws AuthException {
     httpBackEnd.login(username, password);
-  }
-
-  private Long zonedCovertToLong(ZonedDateTime time) {
-    return time.toInstant().toEpochMilli();
   }
 
 }
